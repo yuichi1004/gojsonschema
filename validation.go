@@ -44,6 +44,7 @@ func Validate(ls JSONLoader, ld JSONLoader) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	schema.parseReference(schema.rootSchema, schema.rootSchema, ls.JsonSource().(string))
 
 	// begine validation
 
