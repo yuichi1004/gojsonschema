@@ -31,6 +31,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 func isKind(what interface{}, kind reflect.Kind) bool {
@@ -77,12 +78,14 @@ func checkJsonNumber(what interface{}) (isValidFloat64 bool, isValidInt64 bool, 
 
 	jsonNumber := what.(json.Number)
 
+	hasDecimalPoint := strings.Contains(jsonNumber.String(), ".")
+
 	f64, errFloat64 := jsonNumber.Float64()
 	s64 := strconv.FormatFloat(f64, 'f', -1, 64)
 	_, errInt64 := strconv.ParseInt(s64, 10, 64)
 
 	isValidFloat64 = errFloat64 == nil
-	isValidInt64 = errInt64 == nil
+	isValidInt64 = errInt64 == nil && !hasDecimalPoint
 
 	_, errInt32 := strconv.ParseInt(s64, 10, 32)
 	isValidInt32 = isValidInt64 && errInt32 == nil
