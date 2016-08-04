@@ -132,9 +132,114 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		currentSchema.ref = &d.documentReference
 	}
 
+	var (
+		schemaV,
+		refV,
+		definitionsV,
+		idV,
+		titleV,
+		descriptionV,
+		typeV,
+		propsV,
+		additionalPropsV,
+		patternPropsV,
+		dependenciesV,
+		itemsV,
+		additionalItemsV,
+		multipleOfV,
+		minimumV,
+		exclusiveMinimumV,
+		maximumV,
+		exclusiveMaximumV,
+		minLengthV,
+		maxLengthV,
+		patternV,
+		formatV,
+		minPropsV,
+		maxPropsV,
+		requiredV,
+		minItemsV,
+		maxItemsV,
+		uniqueItemsV,
+		enumV,
+		oneOfV,
+		anyOfV,
+		allOfV,
+		notV interface{}
+	)
+
+	for k, v := range m {
+		switch k {
+		case KEY_SCHEMA:
+			schemaV = v
+		case KEY_REF:
+			refV = v
+		case KEY_DEFINITIONS:
+			definitionsV = v
+		case KEY_ID:
+			idV = v
+		case KEY_DESCRIPTION:
+			descriptionV = v
+		case KEY_TYPE:
+			typeV = v
+		case KEY_PROPERTIES:
+			propsV = v
+		case KEY_ADDITIONAL_PROPERTIES:
+			additionalPropsV = v
+		case KEY_PATTERN_PROPERTIES:
+			patternPropsV = v
+		case KEY_DEPENDENCIES:
+			dependenciesV = v
+		case KEY_ITEMS:
+			itemsV = v
+		case KEY_ADDITIONAL_ITEMS:
+			additionalItemsV = v
+		case KEY_MULTIPLE_OF:
+			multipleOfV = v
+		case KEY_MINIMUM:
+			minimumV = v
+		case KEY_EXCLUSIVE_MINIMUM:
+			exclusiveMinimumV = v
+		case KEY_MAXIMUM:
+			maximumV = v
+		case KEY_EXCLUSIVE_MAXIMUM:
+			exclusiveMaximumV = v
+		case KEY_MIN_LENGTH:
+			minLengthV = v
+		case KEY_MAX_LENGTH:
+			maxLengthV = v
+		case KEY_PATTERN:
+			patternV = v
+		case KEY_FORMAT:
+			formatV = v
+		case KEY_MIN_PROPERTIES:
+			minPropsV = v
+		case KEY_MAX_PROPERTIES:
+			maxPropsV = v
+		case KEY_REQUIRED:
+			requiredV = v
+		case KEY_MIN_ITEMS:
+			minItemsV = v
+		case KEY_MAX_ITEMS:
+			maxItemsV = v
+		case KEY_UNIQUE_ITEMS:
+			uniqueItemsV = v
+		case KEY_ENUM:
+			enumV = v
+		case KEY_ONE_OF:
+			oneOfV = v
+		case KEY_ANY_OF:
+			anyOfV = v
+		case KEY_ALL_OF:
+			allOfV = v
+		case KEY_NOT:
+			notV = v
+		}
+	}
+
 	// $subSchema
-	if schema, ok := m[KEY_SCHEMA]; ok {
-		if schemaRef, ok := schema.(string); ok {
+	if schemaV != nil {
+		if schemaRef, ok := schemaV.(string); ok {
 			schemaReference, err := gojsonreference.NewJsonReference(schemaRef)
 			if err != nil {
 				return err
@@ -152,8 +257,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// $ref
-	if ref, ok := m[KEY_REF]; ok {
-		if k, ok := ref.(string); ok {
+	if refV != nil {
+		if k, ok := refV.(string); ok {
 			if sch, ok := d.referencePool.Get(currentSchema.ref.String() + k); ok {
 				currentSchema.refSchema = sch
 			} else {
@@ -171,8 +276,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// definitions
-	if definitions, ok := m[KEY_DEFINITIONS]; ok {
-		if defs, ok := definitions.(map[string]interface{}); ok {
+	if definitionsV != nil {
+		if defs, ok := definitionsV.(map[string]interface{}); ok {
 			currentSchema.definitions = make(map[string]*subSchema)
 			for dk, dv := range defs {
 				if isKind(dv, reflect.Map) {
@@ -204,8 +309,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// id
-	if id, ok := m[KEY_ID]; ok {
-		if k, ok := id.(string); ok {
+	if idV != nil {
+		if k, ok := idV.(string); ok {
 			currentSchema.id = &k
 		} else {
 			return errors.New(formatErrorDescription(
@@ -219,8 +324,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// title
-	if title, ok := m[KEY_TITLE]; ok {
-		if k, ok := title.(string); ok {
+	if titleV != nil {
+		if k, ok := titleV.(string); ok {
 			currentSchema.title = &k
 		} else {
 			return errors.New(formatErrorDescription(
@@ -234,8 +339,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// description
-	if description, ok := m[KEY_DESCRIPTION]; ok {
-		if k, ok := description.(string); ok {
+	if descriptionV != nil {
+		if k, ok := descriptionV.(string); ok {
 			currentSchema.description = &k
 		} else {
 			return errors.New(formatErrorDescription(
@@ -249,16 +354,16 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// type
-	if typ, ok := m[KEY_TYPE]; ok {
-		switch typ.(type) {
+	if typeV != nil {
+		switch typeV.(type) {
 		case string:
-			if k, ok := typ.(string); ok {
+			if k, ok := typeV.(string); ok {
 				if err := currentSchema.types.Add(k); err != nil {
 					return err
 				}
 			}
 		case []interface{}:
-			arrayOfTypes := typ.([]interface{})
+			arrayOfTypes := typeV.([]interface{})
 			for _, typeInArray := range arrayOfTypes {
 				if k, ok := typeInArray.(string); ok {
 					currentSchema.types.Add(k)
@@ -284,21 +389,21 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// properties
-	if props, ok := m[KEY_PROPERTIES]; ok {
-		if err := d.parseProperties(props, currentSchema); err != nil {
+	if propsV != nil {
+		if err := d.parseProperties(propsV, currentSchema); err != nil {
 			return err
 		}
 	}
 
 	// additionalProperties
-	if additionalProps, ok := m[KEY_ADDITIONAL_PROPERTIES]; ok {
-		switch reflect.ValueOf(additionalProps).Kind() {
+	if additionalPropsV != nil {
+		switch reflect.ValueOf(additionalPropsV).Kind() {
 		case reflect.Bool:
-			currentSchema.additionalProperties = additionalProps.(bool)
+			currentSchema.additionalProperties = additionalPropsV.(bool)
 		case reflect.Map:
 			newSchema := &subSchema{property: KEY_ADDITIONAL_PROPERTIES, parent: currentSchema, ref: currentSchema.ref}
 			currentSchema.additionalProperties = newSchema
-			if err := d.parseSchema(additionalProps, newSchema, true); err != nil {
+			if err := d.parseSchema(additionalPropsV, newSchema, true); err != nil {
 				return errors.New(err.Error())
 			}
 		default:
@@ -313,8 +418,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// patternProperties
-	if patternProps, ok := m[KEY_PATTERN_PROPERTIES]; ok {
-		if patternPropertiesMap, ok := patternProps.(map[string]interface{}); ok {
+	if patternPropsV != nil {
+		if patternPropertiesMap, ok := patternPropsV.(map[string]interface{}); ok {
 			if len(patternPropertiesMap) > 0 {
 				currentSchema.patternProperties = make(map[string]*subSchema)
 				for k, v := range patternPropertiesMap {
@@ -344,17 +449,17 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// dependencies
-	if deps, ok := m[KEY_DEPENDENCIES]; ok {
-		if err := d.parseDependencies(deps, currentSchema); err != nil {
+	if dependenciesV != nil {
+		if err := d.parseDependencies(dependenciesV, currentSchema); err != nil {
 			return err
 		}
 	}
 
 	// items
-	if items, ok := m[KEY_ITEMS]; ok {
-		switch reflect.ValueOf(items).Kind() {
+	if itemsV != nil {
+		switch reflect.ValueOf(itemsV).Kind() {
 		case reflect.Slice:
-			for _, itemElement := range items.([]interface{}) {
+			for _, itemElement := range itemsV.([]interface{}) {
 				if isKind(itemElement, reflect.Map) {
 					newSchema := &subSchema{parent: currentSchema, property: KEY_ITEMS}
 					newSchema.ref = currentSchema.ref
@@ -377,7 +482,7 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 			newSchema := &subSchema{parent: currentSchema, property: KEY_ITEMS}
 			newSchema.ref = currentSchema.ref
 			currentSchema.AddItemsChild(newSchema)
-			if err := d.parseSchema(items, newSchema, true); err != nil {
+			if err := d.parseSchema(itemsV, newSchema, true); err != nil {
 				return err
 			}
 			currentSchema.itemsChildrenIsSingleSchema = true
@@ -393,14 +498,14 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// additionalItems
-	if additionalItems, ok := m[KEY_ADDITIONAL_ITEMS]; ok {
-		switch reflect.ValueOf(additionalItems).Kind() {
+	if additionalItemsV != nil {
+		switch reflect.ValueOf(additionalItemsV).Kind() {
 		case reflect.Bool:
-			currentSchema.additionalItems = additionalItems.(bool)
+			currentSchema.additionalItems = additionalItemsV.(bool)
 		case reflect.Map:
 			newSchema := &subSchema{property: KEY_ADDITIONAL_ITEMS, parent: currentSchema, ref: currentSchema.ref}
 			currentSchema.additionalItems = newSchema
-			if err := d.parseSchema(additionalItems, newSchema, true); err != nil {
+			if err := d.parseSchema(additionalItemsV, newSchema, true); err != nil {
 				return errors.New(err.Error())
 			}
 		default:
@@ -415,8 +520,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 	}
 
 	// validation : number / integer
-	if multipleOf, ok := m[KEY_MULTIPLE_OF]; ok {
-		multipleOfValue := mustBeNumber(multipleOf)
+	if multipleOfV != nil {
+		multipleOfValue := mustBeNumber(multipleOfV)
 		if multipleOfValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.InvalidType(),
@@ -435,8 +540,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		currentSchema.multipleOf = multipleOfValue
 	}
 
-	if minimum, ok := m[KEY_MINIMUM]; ok {
-		minimumValue := mustBeNumber(minimum)
+	if minimumV != nil {
+		minimumValue := mustBeNumber(minimumV)
 		if minimumValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeOfA(),
@@ -446,8 +551,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		currentSchema.minimum = minimumValue
 	}
 
-	if exclMinimum, ok := m[KEY_EXCLUSIVE_MINIMUM]; ok {
-		if exclusiveMinimumValue, ok := exclMinimum.(bool); ok {
+	if exclusiveMinimumV != nil {
+		if exclusiveMinimumValue, ok := exclusiveMinimumV.(bool); ok {
 			if currentSchema.minimum == nil {
 				return errors.New(formatErrorDescription(
 					Locale.CannotBeUsedWithout(),
@@ -463,8 +568,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		}
 	}
 
-	if maximum, ok := m[KEY_MAXIMUM]; ok {
-		maximumValue := mustBeNumber(maximum)
+	if maximumV != nil {
+		maximumValue := mustBeNumber(maximumV)
 		if maximumValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeOfA(),
@@ -474,8 +579,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		currentSchema.maximum = maximumValue
 	}
 
-	if exclMaximum, ok := m[KEY_EXCLUSIVE_MAXIMUM]; ok {
-		if exclusiveMaximumValue, ok := exclMaximum.(bool); ok {
+	if exclusiveMaximumV != nil {
+		if exclusiveMaximumValue, ok := exclusiveMaximumV.(bool); ok {
 			if currentSchema.maximum == nil {
 				return errors.New(formatErrorDescription(
 					Locale.CannotBeUsedWithout(),
@@ -502,8 +607,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 
 	// validation : string
 
-	if minLength, ok := m[KEY_MIN_LENGTH]; ok {
-		minLengthIntegerValue := mustBeInteger(minLength)
+	if minLengthV != nil {
+		minLengthIntegerValue := mustBeInteger(minLengthV)
 		if minLengthIntegerValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeOfAn(),
@@ -519,8 +624,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		currentSchema.minLength = minLengthIntegerValue
 	}
 
-	if maxLength, ok := m[KEY_MAX_LENGTH]; ok {
-		maxLengthIntegerValue := mustBeInteger(maxLength)
+	if maxLengthV != nil {
+		maxLengthIntegerValue := mustBeInteger(maxLengthV)
 		if maxLengthIntegerValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeOfAn(),
@@ -545,8 +650,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		}
 	}
 
-	if pattern, ok := m[KEY_PATTERN]; ok {
-		if k, ok := pattern.(string); ok {
+	if patternV != nil {
+		if k, ok := patternV.(string); ok {
 			regexpObject, err := regexpCompile(k)
 			if err != nil {
 				return errors.New(formatErrorDescription(
@@ -563,22 +668,22 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		}
 	}
 
-	if format, ok := m[KEY_FORMAT]; ok {
-		formatString, ok := format.(string)
+	if formatV != nil {
+		formatString, ok := formatV.(string)
 		if ok && FormatCheckers.Has(formatString) {
 			currentSchema.format = formatString
 		} else {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeValidFormat(),
-				ErrorDetails{"key": KEY_FORMAT, "given": format},
+				ErrorDetails{"key": KEY_FORMAT, "given": formatV},
 			))
 		}
 	}
 
 	// validation : object
 
-	if minProps, ok := m[KEY_MIN_PROPERTIES]; ok {
-		minPropertiesIntegerValue := mustBeInteger(minProps)
+	if minPropsV != nil {
+		minPropertiesIntegerValue := mustBeInteger(minPropsV)
 		if minPropertiesIntegerValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeOfAn(),
@@ -594,8 +699,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		currentSchema.minProperties = minPropertiesIntegerValue
 	}
 
-	if maxProps, ok := m[KEY_MAX_PROPERTIES]; ok {
-		maxPropertiesIntegerValue := mustBeInteger(maxProps)
+	if maxPropsV != nil {
+		maxPropertiesIntegerValue := mustBeInteger(maxPropsV)
 		if maxPropertiesIntegerValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeOfAn(),
@@ -620,8 +725,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		}
 	}
 
-	if required, ok := m[KEY_REQUIRED]; ok {
-		if requiredValues, ok := required.([]interface{}); ok {
+	if requiredV != nil {
+		if requiredValues, ok := requiredV.([]interface{}); ok {
 			for _, requiredValue := range requiredValues {
 				if k, ok := requiredValue.(string); ok {
 					if err := currentSchema.AddRequired(k); err != nil {
@@ -644,8 +749,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 
 	// validation : array
 
-	if minItems, ok := m[KEY_MIN_ITEMS]; ok {
-		minItemsIntegerValue := mustBeInteger(minItems)
+	if minItemsV != nil {
+		minItemsIntegerValue := mustBeInteger(minItemsV)
 		if minItemsIntegerValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeOfAn(),
@@ -661,8 +766,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		currentSchema.minItems = minItemsIntegerValue
 	}
 
-	if maxItems, ok := m[KEY_MAX_ITEMS]; ok {
-		maxItemsIntegerValue := mustBeInteger(maxItems)
+	if maxItemsV != nil {
+		maxItemsIntegerValue := mustBeInteger(maxItemsV)
 		if maxItemsIntegerValue == nil {
 			return errors.New(formatErrorDescription(
 				Locale.MustBeOfAn(),
@@ -678,8 +783,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		currentSchema.maxItems = maxItemsIntegerValue
 	}
 
-	if uniqueItems, ok := m[KEY_UNIQUE_ITEMS]; ok {
-		if k, ok := uniqueItems.(bool); ok {
+	if uniqueItemsV != nil {
+		if k, ok := uniqueItemsV.(bool); ok {
 			currentSchema.uniqueItems = k
 		} else {
 			return errors.New(formatErrorDescription(
@@ -691,8 +796,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 
 	// validation : all
 
-	if enum, ok := m[KEY_ENUM]; ok {
-		if enumValue, ok := enum.([]interface{}); ok {
+	if enumV != nil {
+		if enumValue, ok := enumV.([]interface{}); ok {
 			for _, v := range enumValue {
 				if err := currentSchema.AddEnum(v); err != nil {
 					return err
@@ -708,8 +813,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 
 	// validation : subSchema
 
-	if oneOf, ok := m[KEY_ONE_OF]; ok {
-		if oneOfValue, ok := oneOf.([]interface{}); ok {
+	if oneOfV != nil {
+		if oneOfValue, ok := oneOfV.([]interface{}); ok {
 			for _, v := range oneOfValue {
 				newSchema := &subSchema{property: KEY_ONE_OF, parent: currentSchema, ref: currentSchema.ref}
 				currentSchema.AddOneOf(newSchema)
@@ -725,8 +830,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		}
 	}
 
-	if anyOf, ok := m[KEY_ANY_OF]; ok {
-		if anyOfValue, ok := anyOf.([]interface{}); ok {
+	if anyOfV != nil {
+		if anyOfValue, ok := anyOfV.([]interface{}); ok {
 			for _, v := range anyOfValue {
 				newSchema := &subSchema{property: KEY_ANY_OF, parent: currentSchema, ref: currentSchema.ref}
 				currentSchema.AddAnyOf(newSchema)
@@ -742,8 +847,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		}
 	}
 
-	if allOf, ok := m[KEY_ALL_OF]; ok {
-		if allOfValue, ok := allOf.([]interface{}); ok {
+	if allOfV != nil {
+		if allOfValue, ok := allOfV.([]interface{}); ok {
 			for _, v := range allOfValue {
 				newSchema := &subSchema{property: KEY_ALL_OF, parent: currentSchema, ref: currentSchema.ref}
 				currentSchema.AddAllOf(newSchema)
@@ -759,11 +864,11 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema,
 		}
 	}
 
-	if not, ok := m[KEY_NOT]; ok {
-		if isKind(not, reflect.Map) {
+	if notV != nil {
+		if isKind(notV, reflect.Map) {
 			newSchema := &subSchema{property: KEY_NOT, parent: currentSchema, ref: currentSchema.ref}
 			currentSchema.SetNot(newSchema)
-			if err := d.parseSchema(not, newSchema, true); err != nil {
+			if err := d.parseSchema(notV, newSchema, true); err != nil {
 				return err
 			}
 		} else {
