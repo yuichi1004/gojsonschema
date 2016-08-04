@@ -78,12 +78,13 @@ func (p *schemaPool) GetDocument(reference gojsonreference.JsonReference) (*sche
 
 	refToUrl := reference
 	refToUrl.GetUrl().Fragment = ""
+	refToUrlStr := refToUrl.String()
 
 	var spd *schemaPoolDocument
 
 	// Try to find the requested document in the pool
 	for k := range p.schemaPoolDocuments {
-		if k == refToUrl.String() {
+		if k == refToUrlStr {
 			spd = p.schemaPoolDocuments[k]
 		}
 	}
@@ -95,7 +96,7 @@ func (p *schemaPool) GetDocument(reference gojsonreference.JsonReference) (*sche
 		return spd, nil
 	}
 
-	jsonReferenceLoader := p.jsonLoaderFactory.New(reference.String())
+	jsonReferenceLoader := p.jsonLoaderFactory.New(refToUrlStr)
 	document, err := jsonReferenceLoader.LoadJSON()
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func (p *schemaPool) GetDocument(reference gojsonreference.JsonReference) (*sche
 
 	spd = &schemaPoolDocument{Document: document}
 	// add the document to the pool for potential later use
-	p.schemaPoolDocuments[refToUrl.String()] = spd
+	p.schemaPoolDocuments[refToUrlStr] = spd
 
 	return spd, nil
 }
