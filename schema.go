@@ -38,8 +38,23 @@ import (
 var (
 	// Locale is the default locale to use
 	// Library users can overwrite with their own implementation
-	Locale locale = DefaultLocale{}
+	Locale      locale                    = DefaultLocale{}
+	regexpCache map[string]*regexp.Regexp = map[string]*regexp.Regexp{}
 )
+
+func regexpCompile(key string) (*regexp.Regexp, error) {
+	if re, ok := regexpCache[key]; ok {
+		return re, nil
+	}
+
+	re, err := regexp.Compile(key)
+	if err != nil {
+		return nil, err
+	}
+
+	regexpCache[key] = re
+	return re, nil
+}
 
 func NewSchema(l JSONLoader) (*Schema, error) {
 	ref, err := l.JsonReference()
@@ -50,7 +65,7 @@ func NewSchema(l JSONLoader) (*Schema, error) {
 	d := Schema{}
 	d.pool = newSchemaPool(l.LoaderFactory())
 	d.documentReference = ref
-	d.referencePool=newSchemaReferencePool()
+	d.referencePool = newSchemaReferencePool()
 
 	var doc interface{}
 	if ref.String() != "#" {
@@ -315,13 +330,14 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema)
 			if len(patternPropertiesMap) > 0 {
 				currentSchema.patternProperties = make(map[string]*subSchema)
 				for k, v := range patternPropertiesMap {
-					_, err := regexp.MatchString(k, "")
+					_, err := regexpCompile(k)
 					if err != nil {
 						return errors.New(formatErrorDescription(
 							Locale.RegexPattern(),
 							ErrorDetails{"pattern": k},
 						))
 					}
+
 					newSchema := &subSchema{property: k, parent: currentSchema, ref: currentSchema.ref}
 					err = d.parseSchema(v, newSchema)
 					if err != nil {
@@ -550,7 +566,8 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema)
 
 	if existsMapKey(m, KEY_PATTERN) {
 		if isKind(m[KEY_PATTERN], reflect.String) {
-			regexpObject, err := regexp.Compile(m[KEY_PATTERN].(string))
+			k := m[KEY_PATTERN].(string)
+			regexpObject, err := regexpCompile(k)
 			if err != nil {
 				return errors.New(formatErrorDescription(
 					Locale.MustBeValidRegex(),
