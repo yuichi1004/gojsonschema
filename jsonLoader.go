@@ -31,7 +31,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -77,7 +76,6 @@ func (f FileSystemJSONLoaderFactory) New(source string) JSONLoader {
 	}
 }
 
-
 // osFileSystem is a functional wrapper for os.Open that implements http.FileSystem.
 type osFileSystem func(string) (*os.File, error)
 
@@ -98,7 +96,7 @@ func (l *jsonReferenceLoader) JsonSource() interface{} {
 }
 
 func (l *jsonReferenceLoader) JsonReference() (gojsonreference.JsonReference, error) {
-	return gojsonreference.NewJsonReference(l.JsonSource().(string))
+	return gojsonreference.NewJsonReference(l.source)
 }
 
 func (l *jsonReferenceLoader) LoaderFactory() JSONLoaderFactory {
@@ -123,17 +121,13 @@ func NewReferenceLoaderFileSystem(source string, fs http.FileSystem) *jsonRefere
 
 func (l *jsonReferenceLoader) LoadJSON() (interface{}, error) {
 
-	var err error
-
-	reference, err := gojsonreference.NewJsonReference(l.JsonSource().(string))
+	reference, err := gojsonreference.NewJsonReference(l.source)
 	if err != nil {
 		return nil, err
 	}
 
 	refToUrl := reference
 	refToUrl.GetUrl().Fragment = ""
-
-	var document interface{}
 
 	if reference.HasFileScheme {
 
@@ -148,24 +142,11 @@ func (l *jsonReferenceLoader) LoadJSON() (interface{}, error) {
 			filename = strings.Replace(filename, "%20", " ", -1)
 		}
 
-		document, err = l.loadFromFile(filename)
-		if err != nil {
-			return nil, err
-		}
-
+		return l.loadFromFile(filename)
 	} else {
-
-		document, err = l.loadFromHTTP(refToUrl.String())
-		if err != nil {
-			return nil, err
-		}
-
+		return l.loadFromHTTP(refToUrl.String())
 	}
-
-	return document, nil
-
 }
-
 
 func (l *jsonReferenceLoader) loadFromHTTP(address string) (interface{}, error) {
 
@@ -173,18 +154,14 @@ func (l *jsonReferenceLoader) loadFromHTTP(address string) (interface{}, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	// must return HTTP Status 200 OK
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(formatErrorDescription(Locale.httpBadStatus(), ErrorDetails{"status": resp.Status}))
 	}
 
-	bodyBuff, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return decodeJsonUsingNumber(bytes.NewReader(bodyBuff))
+	return decodeJsonUsingNumber(resp.Body)
 
 }
 
@@ -195,12 +172,7 @@ func (l *jsonReferenceLoader) loadFromFile(path string) (interface{}, error) {
 	}
 	defer f.Close()
 
-	bodyBuff, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	return decodeJsonUsingNumber(bytes.NewReader(bodyBuff))
+	return decodeJsonUsingNumber(f)
 
 }
 
@@ -228,7 +200,7 @@ func NewStringLoader(source string) *jsonStringLoader {
 
 func (l *jsonStringLoader) LoadJSON() (interface{}, error) {
 
-	return decodeJsonUsingNumber(strings.NewReader(l.JsonSource().(string)))
+	return decodeJsonUsingNumber(strings.NewReader(l.source))
 
 }
 
